@@ -3,6 +3,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 import os
 from dotenv import load_dotenv
+import urllib.parse
 
 load_dotenv()
 
@@ -47,13 +48,16 @@ class Supplier(Base):
     contact = Column(String, nullable=True)
 
 # sqlalchemy engine and session setup
-DB_HOST = os.getenv('DB_HOST')
-DB_PORT = os.getenv('DB_PORT')
-DB_NAME = os.getenv('DB_NAME')
-DB_USER = os.getenv('DB_USER')
-DB_PASSWORD = os.getenv('DB_PASSWORD')
+DB_HOST = os.getenv('DB_HOST', '').strip('"\'')
+DB_PORT = os.getenv('DB_PORT', '').strip('"\'')
+DB_NAME = os.getenv('DB_NAME', '').strip('"\'')
+DB_USER = os.getenv('DB_USER', '').strip('"\'')
+DB_PASSWORD = urllib.parse.quote(os.getenv('DB_PASSWORD', '').strip('"\''))
 
 DATABASE_URL = f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+
+# printing url for debugging
+print("DATABASE_URL:", DATABASE_URL)
 
 engine = create_engine(DATABASE_URL, echo=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
