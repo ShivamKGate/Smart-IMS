@@ -2,9 +2,268 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Smart-IMS Frontend</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartIMS Frontend</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea, button {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .results {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 15px;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 <body>
-    <!-- Frontend UI will go here -->
+    <h1>SmartIMS - Inventory Management System</h1>
+    
+    <div class="grid">
+        <!-- Natural Language Query Section -->
+        <div class="container">
+            <h2>Natural Language Query</h2>
+            <p>Ask questions about your inventory in plain English!</p>
+            
+            <div class="input-group">
+                <label for="nlQuery">Your Question:</label>
+                <textarea id="nlQuery" rows="3" placeholder="e.g., 'Show me items that are low on stock' or 'What's the total value of inventory?'"></textarea>
+            </div>
+            
+            <button onclick="submitNLQuery()">Ask Question</button>
+            
+            <div id="nlResults" class="results" style="display: none;"></div>
+        </div>
+
+        <!-- Direct SQL Query Section -->
+        <div class="container">
+            <h2>Direct SQL Query (Admin)</h2>
+            <p>Execute SQL queries directly on the database.</p>
+            
+            <div class="input-group">
+                <label for="sqlQuery">SQL Query:</label>
+                <textarea id="sqlQuery" rows="3" placeholder="SELECT * FROM products LIMIT 5;"></textarea>
+            </div>
+            
+            <button onclick="submitSQLQuery()">Execute SQL</button>
+            
+            <div id="sqlResults" class="results" style="display: none;"></div>
+        </div>
+    </div>
+
+    <!-- Inventory Actions Section -->
+    <div class="container">
+        <h2>Quick Inventory Actions</h2>
+        
+        <div class="grid">
+            <div>
+                <button onclick="getLowStock()">Get Low Stock Items</button>
+                <button onclick="getInventorySummary()">Get Inventory Summary</button>
+            </div>
+            
+            <div>
+                <h3>Add Inventory</h3>
+                <div class="input-group">
+                    <label for="productId">Product ID:</label>
+                    <input type="number" id="productId" placeholder="1">
+                </div>
+                <div class="input-group">
+                    <label for="warehouseId">Warehouse ID:</label>
+                    <input type="number" id="warehouseId" placeholder="1">
+                </div>
+                <div class="input-group">
+                    <label for="quantity">Quantity:</label>
+                    <input type="number" id="quantity" placeholder="50">
+                </div>
+                <button onclick="addInventory()">Add Inventory</button>
+            </div>
+        </div>
+        
+        <div id="actionResults" class="results" style="display: none;"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000';
+
+        async function makeRequest(url, method = 'GET', body = null) {
+            try {
+                const options = {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                };
+                
+                if (body) {
+                    options.body = JSON.stringify(body);
+                }
+
+                const response = await fetch(`${API_BASE}${url}`, options);
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.detail || 'Request failed');
+                }
+                
+                return data;
+            } catch (error) {
+                throw error;
+            }
+        }
+
+        function displayResults(elementId, data, isError = false) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.className = `results ${isError ? 'error' : 'success'}`;
+            element.textContent = JSON.stringify(data, null, 2);
+        }
+
+        async function submitNLQuery() {
+            const question = document.getElementById('nlQuery').value.trim();
+            if (!question) {
+                alert('Please enter a question');
+                return;
+            }
+
+            try {
+                const result = await makeRequest('/api/query', 'POST', { question });
+                displayResults('nlResults', result);
+            } catch (error) {
+                displayResults('nlResults', { error: error.message }, true);
+            }
+        }
+
+        async function submitSQLQuery() {
+            const sql = document.getElementById('sqlQuery').value.trim();
+            if (!sql) {
+                alert('Please enter a SQL query');
+                return;
+            }
+
+            try {
+                const result = await makeRequest('/api/sql', 'POST', { sql });
+                displayResults('sqlResults', result);
+            } catch (error) {
+                displayResults('sqlResults', { error: error.message }, true);
+            }
+        }
+
+        async function getLowStock() {
+            try {
+                const result = await makeRequest('/api/inventory/low-stock');
+                displayResults('actionResults', result);
+            } catch (error) {
+                displayResults('actionResults', { error: error.message }, true);
+            }
+        }
+
+        async function getInventorySummary() {
+            try {
+                const result = await makeRequest('/api/inventory/summary');
+                displayResults('actionResults', result);
+            } catch (error) {
+                displayResults('actionResults', { error: error.message }, true);
+            }
+        }
+
+        async function addInventory() {
+            const productId = parseInt(document.getElementById('productId').value);
+            const warehouseId = parseInt(document.getElementById('warehouseId').value);
+            const quantity = parseInt(document.getElementById('quantity').value);
+
+            if (!productId || !warehouseId || !quantity) {
+                alert('Please fill in all fields');
+                return;
+            }
+
+            try {
+                const result = await makeRequest('/api/inventory/add', 'POST', {
+                    product_id: productId,
+                    warehouse_id: warehouseId,
+                    quantity: quantity
+                });
+                displayResults('actionResults', result);
+                
+                // Clear form
+                document.getElementById('productId').value = '';
+                document.getElementById('warehouseId').value = '';
+                document.getElementById('quantity').value = '';
+            } catch (error) {
+                displayResults('actionResults', { error: error.message }, true);
+            }
+        }
+
+        // Load API status on page load
+        window.onload = async function() {
+            try {
+                const health = await makeRequest('/health');
+                console.log('API Status:', health);
+            } catch (error) {
+                console.error('API not accessible:', error);
+            }
+        };
+    </script>
 </body>
 </html>
