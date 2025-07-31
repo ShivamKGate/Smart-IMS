@@ -5,7 +5,7 @@ import logging
 import json
 from typing import Dict, Any
 from fastmcp.client import MCPClient as BaseMCP
-from ollama.ollama_client import ollama_client
+from llm.ollama_client import ollama_client
 
 logger = logging.getLogger(__name__)
 

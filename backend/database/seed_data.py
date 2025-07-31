@@ -1,4 +1,4 @@
-from db import SessionLocal, Category, Product, Warehouse, Inventory, Supplier
+from database.db import SessionLocal, Category, Product, Warehouse, Inventory, Supplier
 
 def seed_database():
     """Populate the database with sample data for testing"""
