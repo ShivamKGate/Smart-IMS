@@ -1,8 +1,17 @@
 from fastmcp.client import MCPClient
+import asyncio
+import json
 
-class MyMCPClient(MCPClient):
+class MCPClientAlpha(MCPClient):
     def __init__(self):
         super().__init__()
+        self.server_running = False
 
-    def get_greeting(self, name: str) -> str:
-        return f"Hello, {name}!"    
+    async def start_server(self):
+        # placeholder for server start
+        self.server_running = True
+        return True
+
+    async def call_tool(self, tool_name: str, arguments: dict) -> dict:
+        # basic simulated call
+        return {"success": True, "result": {"tool": tool_name, "args": arguments}}
