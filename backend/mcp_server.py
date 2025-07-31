@@ -27,3 +27,13 @@ def execute_sql_query(sql: str):
         results = []
     conn.close()
     return results
+
+@mcp.tool()
+def get_database_schema():
+    return {"tables": { ... }}  # simplified
+
+@mcp.tool()
+def get_low_stock_items(warehouse_id: int = None):
+    where = f"AND i.warehouse_id={warehouse_id}" if warehouse_id else ""
+    sql = f"SELECT p.name, i.quantity FROM inventory i JOIN products p ON ... WHERE i.quantity <= p.reorder_level {where}"
+    return execute_sql_query(sql)
