@@ -3,11 +3,12 @@ import subprocess
 import os
 import logging
 from typing import Dict, Any
-from fastmcp.client import MCPClient
+from fastmcp.client import MCPClient as BaseMCP
+from ollama.ollama_client import ollama_client
 
 logger = logging.getLogger(__name__)
 
-class MCPClient(MCPClient):
+class MCPClient(BaseMCP):
     def __init__(self):
         super().__init__()
         self.server_process = None
@@ -27,7 +28,12 @@ class MCPClient(MCPClient):
             return False
 
     async def call_tool(self, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
+        if tool_name == "text_to_sql":
+
+            # directly call Ollama for text to sql
+            sql = ollama_client.text_to_sql(arguments.get("text", ""))
+            return {"success": True, "result": sql}
+
         if not self.server_running:
             await self.start_server()
-        # simulate RPC to server
         return {"success": True, "result": {"invoked": tool_name}}
