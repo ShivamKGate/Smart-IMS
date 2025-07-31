@@ -2,6 +2,7 @@ import asyncio
 import subprocess
 import os
 import logging
+import json
 from typing import Dict, Any
 from fastmcp.client import MCPClient as BaseMCP
 from ollama.ollama_client import ollama_client
@@ -13,27 +14,21 @@ class MCPClient(BaseMCP):
         super().__init__()
         self.server_process = None
         self.server_running = False
-
-    async def start_server(self) -> bool:
-        try:
-            server_path = os.path.join(os.path.dirname(__file__), "mcp_server.py")
-            self.server_process = subprocess.Popen(
-                ["python", server_path], text=True
-            )
-            self.server_running = True
-            logger.info("MCP Server started")
-            return True
-        except Exception as e:
-            logger.error(f"Start server failed: {e}")
-            return False
+    async def start_server(self):
+        self.server_process = subprocess.Popen(
+            ["python", os.path.join(os.path.dirname(__file__), "mcp_server.py")],
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+        )
+        self.server_running = True
 
     async def call_tool(self, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
         if tool_name == "text_to_sql":
+            return {"success": True, "result": ollama_client.text_to_sql(arguments["text"])}
 
-            # directly call Ollama for text to sql
-            sql = ollama_client.text_to_sql(arguments.get("text", ""))
-            return {"success": True, "result": sql}
-
-        if not self.server_running:
-            await self.start_server()
-        return {"success": True, "result": {"invoked": tool_name}}
+        if not self.server_running: await self.start_server()
+        request = {"jsonrpc":"2.0","id":1,"method":"tools/call","params": {"name":tool_name, "arguments":arguments}}
+        # send and receive via pipes
+        self.server_process.stdin.write(json.dumps(request) + "\n")
+        self.server_process.stdin.flush()
+        response = self.server_process.stdout.readline()
+        return json.loads(response)
