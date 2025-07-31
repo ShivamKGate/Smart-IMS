@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
-from mcp_client import MCPClient
+from mcp.mcp_client import MCPClient
 from pydantic import BaseModel
 
 load_dotenv()
