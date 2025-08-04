@@ -1,7 +1,9 @@
 fastmcp
+mcp
 sqlalchemy
 fastapi
 uvicorn
 psycopg2-binary
 python-dotenv
 requests
+pydantic

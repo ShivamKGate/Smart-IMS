@@ -1,0 +1,40 @@
+# Smart-IMS Multi-Table Query Examples
+
+1. Natural Language: Show me all products with their category and current stock in each warehouse.
+SQL:
+SELECT p.name AS product, c.name AS category, w.location AS warehouse, i.quantity AS stock
+FROM products p
+JOIN categories c ON p.category_id = c.id
+JOIN inventory i ON p.id = i.product_id
+JOIN warehouses w ON i.warehouse_id = w.id;
+
+2. Natural Language: List all suppliers and the products they supply (if any).
+SQL:
+SELECT s.name AS supplier, s.contact, p.name AS product
+FROM suppliers s
+LEFT JOIN products p ON s.id = p.id; -- (Assuming a supplier-product relationship, adjust if you have a link table)
+
+3. Natural Language: Which products are below their reorder level in each warehouse?
+SQL:
+SELECT p.name AS product, w.location AS warehouse, i.quantity, p.reorder_level
+FROM products p
+JOIN inventory i ON p.id = i.product_id
+JOIN warehouses w ON i.warehouse_id = w.id
+WHERE i.quantity < p.reorder_level;
+
+4. Natural Language: What is the total inventory value per warehouse?
+SQL:
+SELECT w.location AS warehouse, SUM(i.quantity * p.price) AS total_value
+FROM inventory i
+JOIN products p ON i.product_id = p.id
+JOIN warehouses w ON i.warehouse_id = w.id
+GROUP BY w.location;
+
+5. Natural Language: Show all products in the 'Electronics' category and their stock across all warehouses.
+SQL:
+SELECT p.name AS product, w.location AS warehouse, i.quantity
+FROM products p
+JOIN categories c ON p.category_id = c.id
+JOIN inventory i ON p.id = i.product_id
+JOIN warehouses w ON i.warehouse_id = w.id
+WHERE c.name ILIKE '%electronics%';
